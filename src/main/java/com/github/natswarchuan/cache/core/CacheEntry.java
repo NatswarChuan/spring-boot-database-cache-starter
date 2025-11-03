@@ -10,7 +10,7 @@ import java.io.Serializable;
  */
 @Entity
 @Table(
-    name = "${com.github.natswarchuan.cache.table-name:app_cache_entries}",
+    name = "nwvmc_app_cache_entries",
     uniqueConstraints = {
       @UniqueConstraint(
           name = "uk_cache_name_key",
