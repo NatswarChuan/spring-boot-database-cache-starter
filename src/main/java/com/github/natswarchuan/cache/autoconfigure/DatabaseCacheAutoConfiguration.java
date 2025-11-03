@@ -11,25 +11,17 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-/**
- * Lớp Tự động cấu hình (AutoConfiguration) cho dependency. Lớp này sẽ tự động được kích hoạt khi dự
- * án của bạn (consumer) thêm dependency này vào.
- */
 @AutoConfiguration
 @ConditionalOnClass(CacheManager.class)
 @EnableCaching
-@EnableJpaRepositories(basePackageClasses = CacheEntryRepository.class)
 @EntityScan(basePackageClasses = CacheEntry.class)
 @EnableConfigurationProperties(DatabaseCacheProperties.class)
+@Import(JpaStarterConfig.class)
 public class DatabaseCacheAutoConfiguration {
 
-  /**
-   * Tự động tạo Bean CacheManager. @ConditionalOnBean đảm bảo bean này chỉ được tạo SAU KHI Spring
-   * Data JPA đã tạo thành công CacheEntryRepository.
-   */
   @Bean
   @Primary
   @ConditionalOnBean(CacheEntryRepository.class)
