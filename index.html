@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng dẫn sử dụng Database Cache Starter</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tải Highlight.js CSS (Theme Atom One Dark) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+
+    <style>
+        /* Sử dụng font Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* * Style cho <pre> đã bị xóa vì highlight.js sẽ xử lý.
+         * Tuy nhiên, chúng ta cần đảm bảo <pre> vẫn có 'position: relative' 
+         * để nút copy hoạt động.
+         * May mắn là thẻ <div> cha đã có 'position: relative'.
+         */
+
+        /* Nút copy */
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4b5563; /* gray-600 */
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.2s;
+            z-index: 10; /* Đảm bảo nút copy nổi lên trên */
+        }
+        .copy-btn:hover {
+            background-color: #6b7280; /* gray-500 */
+        }
+        .copy-btn.copied {
+            background-color: #10b981; /* green-500 */
+        }
+
+        /* Đảm bảo code block của highlight.js có bo tròn */
+        .hljs {
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
+    <!-- Tải font Inter từ Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 leading-relaxed">
+
+    <div class="max-w-4xl mx-auto p-6 md:p-10 bg-white shadow-lg rounded-lg my-10">
+
+        <header class="border-b pb-4 mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Hướng dẫn sử dụng `database-cache-spring-boot-starter`</h1>
+            <p class="mt-2 text-lg text-gray-600">Cách tích hợp Spring Boot Cache Manager sử dụng cơ sở dữ liệu (JPA) làm nơi lưu trữ.</p>
+        </header>
+
+        <main>
+            <!-- Giới thiệu -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Giới thiệu</h2>
+                <p>Starter này cung cấp một triển khai (implementation) `CacheManager` cho Spring Boot, cho phép lưu trữ cache trực tiếp vào một bảng trong cơ sở dữ liệu quan hệ (RDBMS) của bạn. Nó sử dụng `spring-boot-starter-data-jpa` làm nền tảng.</p>
+            </section>
+
+            <!-- Điều kiện tiên quyết -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Điều kiện tiên quyết</h2>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li>Java 17+.</li>
+                    <li>Một dự án Spring Boot 3+ đã hoạt động.</li>
+                    <li>Đã tích hợp và cấu hình <strong>`spring-boot-starter-data-jpa`</strong>.</li>
+                    <li>Đã cấu hình `DataSource` (ví dụ: `spring.datasource.url`) để kết nối đến CSDL (MySQL, Postgres, v.v.).</li>
+                </ul>
+            </section>
+
+            <!-- Bước 1: Thêm JitPack Repository -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Bước 1: Thêm JitPack Repository</h2>
+                <p class="mb-3">Vì starter này được host trên JitPack, bạn cần thêm repository của JitPack vào file `pom.xml`:</p>
+                <div class="relative">
+                    <!-- Sửa: onclick="copyCode(this)" -->
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <!-- Sửa: Xóa id, thêm class="language-xml" -->
+                    <pre><code class="language-xml">&lt;!-- pom.xml --&gt;
+&lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;jitpack.io&lt;/id&gt;
+        &lt;url&gt;https://jitpack.io&lt;/url&gt;
+    &lt;/repository&gt;
+&lt;/repositories&gt;</code></pre>
+                </div>
+            </section>
+
+            <!-- Bước 2: Thêm Dependency -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Bước 2: Thêm Dependency của Starter</h2>
+                <p class="mb-3">Thêm dependency của starter vào file `pom.xml`. (Lưu ý: Thay thế `0.0.9-SNAPSHOT` bằng phiên bản mới nhất của bạn).</p>
+                <div class="relative">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <!-- Sửa: Xóa id, thêm class="language-xml" -->
+                    <pre><code class="language-xml">&lt;!-- pom.xml --&gt;
+&lt;dependencies&gt;
+    &lt;!-- ... các dependency khác của bạn (như web, data-jpa) ... --&gt;
+
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.github.NatswarChuan&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-database-cache-starter&lt;/artifactId&gt;
+        &lt;version&gt;0.0.9-SNAPSHOT&lt;/version&gt; &lt;!-- Thay bằng version của bạn --&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+                </div>
+            </section>
+
+            <!-- Bước 3: Cấu hình application.properties -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Bước 3: Cấu hình `application.properties`</h2>
+                <p class="mb-3">Bạn không cần cấu hình gì thêm nếu đã có cấu hình `DataSource` cho JPA. Starter sẽ tự động sử dụng `DataSource` đó.</p>
+                <p class="mb-3">Bạn có thể tùy chọn tên bảng cache bằng thuộc tính dưới đây (nếu không, tên mặc định sẽ là `app_cache_entries`):</p>
+                <div class="relative">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <!-- Sửa: Xóa id, thêm class="language-properties" -->
+                    <pre><code class="language-java"># src/main/resources/application.properties
+
+# Cấu hình DataSource (ví dụ, bạn phải có cái này)
+spring.datasource.url=jdbc:mysql://localhost:3306/my_database
+spring.datasource.username=root
+spring.datasource.password=secret
+</code></pre>
+                </div>
+            </section>
+
+            <!-- Bước 4: Cấu hình Lớp Application chính (QUAN TRỌNG) -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-red-600 mb-3">Bước 4: Cấu hình Lớp Application (Rất quan trọng)</h2>
+                <p class="mb-3">Do cơ chế quét (scanning) của Spring Data JPA, bạn **bắt buộc** phải chỉ định rõ ràng các package cần quét cho cả dự án của bạn (consumer) và cho starter.</p>
+                <p class="mb-3">Cập nhật file `*Application.java` của bạn như sau:</p>
+                <div class="relative">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <!-- Sửa: Xóa id, thêm class="language-java" -->
+                    <pre><code class="language-java">package com.example.cache; // Package của dự án bạn
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@SpringBootApplication
+@EnableJpaRepositories(basePackages = {
+    "com.example.cache", // <-- Package của bạn (để tìm BookRepository)
+    "com.github.natswarchuan.cache.core" // <-- Package của starter
+})
+@EntityScan(basePackages = {
+    "com.example.cache", // <-- Package của bạn (để tìm Book)
+    "com.github.natswarchuan.cache.core" // <-- Package của starter
+})
+public class CacheApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(CacheApplication.class, args);
+  }
+}</code></pre>
+                </div>
+                <p class="mt-3 text-sm text-yellow-700 bg-yellow-100 p-3 rounded-lg"><strong>Lưu ý:</strong> Nếu không thêm 2 dòng `com.github.natswarchuan.cache.core`, dự án của bạn sẽ không tìm thấy `CacheEntryRepository` (gây lỗi) hoặc không tìm thấy Repository của chính bạn (như `BookRepository`).</p>
+            </section>
+            
+            <!-- Bước 5: Sử dụng Cache -->
+            <section class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Bước 5: Sử dụng Cache trong Service</h2>
+                <p class="mb-3">Sau khi hoàn tất cấu hình, bạn có thể sử dụng các annotation cache của Spring như bình thường. Starter sẽ đảm bảo `DatabaseCacheManager` được tự động tiêm (inject).</p>
+                <p class="mb-3">Đảm bảo đối tượng bạn cache (ví dụ: `DemoBook`) phải `implements Serializable`.</p>
+
+                <div class="relative mt-4">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <!-- Sửa: Xóa id, thêm class="language-java" -->
+                    <pre><code class="language-java">package com.example.cache;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+
+@Service
+public class DemoService {
+
+    // ... (inject BookRepository, v.v...)
+
+    /**
+     * @Cacheable:
+     * 1. Tìm trong cache "books" với key là #id.
+     * 2. Nếu thấy, trả về ngay.
+     * 3. Nếu không thấy, chạy hàm, lấy kết quả và LƯU vào cache trước khi trả về.
+     */
+    @Cacheable(value = "books", key = "#id")
+    public DemoBook getBookById(String id) {
+        log.info("-----> ĐANG GỌI DATABASE ĐỂ LẤY SÁCH {} <-----", id);
+        // ... logic tìm sách từ repository ...
+        return new DemoBook(bookEntity.getId(), bookEntity.getTitle());
+    }
+
+    /**
+     * @CachePut:
+     * 1. Luôn chạy hàm này.
+     * 2. Lấy kết quả trả về và GHI ĐÈ vào cache "books" tại key #id.
+     */
+    @CachePut(value = "books", key = "#id")
+    public DemoBook updateBook(String id, BookForm form) {
+        log.info("-----> ĐANG GỌI DATABASE ĐỂ CẬP NHẬT SÁCH {} <-----", id);
+        // ... logic cập nhật sách ...
+        return new DemoBook(bookEntity.getId(), bookEntity.getTitle());
+    }
+
+    /**
+     * @CacheEvict:
+     * 1. Luôn chạy hàm này.
+     * 2. XÓA entry khỏi cache "books" tại key #id.
+     */
+    @CacheEvict(value = "books", key = "#id")
+    public void deleteBook(String id) {
+        log.info("-----> ĐANG GỌI DATABASE ĐỂ XÓA SÁCH {} <-----", id);
+        // ... logic xóa sách ...
+    }
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Kiểm tra -->
+            <section>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">Kiểm tra</h2>
+                <p class="mb-3">Sau khi chạy ứng dụng và gọi API lần đầu tiên (ví dụ: `GET /api/books/{id}`), bạn có thể kiểm tra:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li>Log "ĐANG GỌI DATABASE" sẽ xuất hiện.</li>
+                    <li>Kiểm tra CSDL của bạn, bảng `app_cache_entries` (hoặc tên tùy chỉnh) sẽ được tạo và chứa 1 dòng dữ liệu.</li>
+                    <li>Gọi lại API đó lần thứ hai. Log "ĐANG GỌI DATABASE" sẽ <strong>không</strong> xuất hiện, nghĩa là cache đã hoạt động.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Sửa: Cập nhật hàm copyCode để tìm 'pre > code' bên cạnh nó -->
+    <script>
+        function copyCode(button) {
+            // Tìm phần tử <pre> là anh em kế tiếp của nút
+            const preElement = button.nextElementSibling;
+            if (!preElement || preElement.tagName !== 'PRE') {
+                console.error("Không tìm thấy thẻ <pre> để sao chép.");
+                return;
+            }
+            
+            // Tìm thẻ <code> bên trong <pre>
+            const codeElement = preElement.querySelector('code');
+            if (!codeElement) {
+                console.error("Không tìm thấy thẻ <code> bên trong <pre>.");
+                return;
+            }
+
+            const textToCopy = codeElement.innerText || codeElement.textContent;
+
+            // Sử dụng một textarea tạm thời để copy
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                // Sử dụng document.execCommand để tương thích tốt hơn trong iFrame
+                document.execCommand('copy');
+                button.textContent = 'Đã chép!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('Không thể chép: ', err);
+                button.textContent = 'Lỗi';
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    </script>
+
+    <!-- Thêm: Tải Highlight.js và kích hoạt -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        // Kích hoạt highlight cho tất cả các khối code
+        hljs.highlightAll();
+    </script>
+</body>
+</html>
+
