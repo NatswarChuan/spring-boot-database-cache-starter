@@ -12,9 +12,9 @@
 		<relativePath />
 	</parent>
 
-	<groupId>com.github.NatswarChuan</groupId>
+	<groupId>com.github.natswarchuan.cache</groupId>
 	<artifactId>database-cache-spring-boot-starter</artifactId>
-	<version>0.0.7-SNAPSHOT</version>
+	<version>0.0.8-SNAPSHOT</version>
 	<name>database-cache-spring-boot-starter</name>
 	<description>Database cache starter for Spring Boot</description>
 
