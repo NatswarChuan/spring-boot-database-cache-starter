@@ -9,16 +9,19 @@ import org.springframework.cache.support.SimpleValueWrapper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
-/** Triển khai interface Cache của Spring. Lớp này chứa logic cốt lõi cho get, put, evict. */
+/**
+ * Triển khai interface Cache của Spring. THAY ĐỔI LỚN: Giờ chúng ta serialize() Object key thay vì
+ * key.toString().
+ */
 @SuppressWarnings("null")
 public class DatabaseCache implements Cache {
 
   private static final Logger log = LoggerFactory.getLogger(DatabaseCache.class);
 
   private final String name;
-  private final CacheEntryRepository repository;
+  private final IDatabaseCacheRepository<?, ?> repository;
 
-  public DatabaseCache(String name, CacheEntryRepository repository) {
+  public DatabaseCache(String name, IDatabaseCacheRepository<?, ?> repository) {
     Assert.notNull(name, "Tên Cache không được null");
     Assert.notNull(repository, "Repository không được null");
     this.name = name;
@@ -39,10 +42,12 @@ public class DatabaseCache implements Cache {
   @Override
   @Nullable
   public ValueWrapper get(Object key) {
-    String keyStr = key.toString();
-    log.trace("Cache GET: [Cache: {}, Key: {}]", name, keyStr);
+
+    byte[] keyBytes = serialize(key);
+    log.trace("Cache GET: [Cache: {}, Key: (binary)]", name);
+
     return repository
-        .findByCacheNameAndCacheKey(name, keyStr)
+        .findByCacheNameAndCacheKey(name, keyBytes)
         .map(
             entry -> {
               Object value = deserialize(entry.getValue());
@@ -100,18 +105,21 @@ public class DatabaseCache implements Cache {
   /** Lưu giá trị vào cache. */
   @Override
   public void put(Object key, @Nullable Object value) {
-    String keyStr = key.toString();
-    log.trace("Cache PUT: [Cache: {}, Key: {}]", name, keyStr);
-    byte[] bytes = serialize(value);
-    repository.upsert(name, keyStr, bytes);
+
+    byte[] keyBytes = serialize(key);
+    byte[] valueBytes = serialize(value);
+    log.trace("Cache PUT: [Cache: {}, Key: (binary)]", name);
+
+    repository.upsert(name, keyBytes, valueBytes);
   }
 
   /** Xóa một mục khỏi cache. */
   @Override
   public void evict(Object key) {
-    String keyStr = key.toString();
-    log.trace("Cache EVICT: [Cache: {}, Key: {}]", name, keyStr);
-    repository.deleteByCacheNameAndCacheKey(name, keyStr);
+
+    byte[] keyBytes = serialize(key);
+    log.trace("Cache EVICT: [Cache: {}, Key: (binary)]", name);
+    repository.deleteByCacheNameAndCacheKey(name, keyBytes);
   }
 
   /** Xóa tất cả các mục trong cache này. */
@@ -121,25 +129,27 @@ public class DatabaseCache implements Cache {
     repository.deleteByCacheName(name);
   }
 
-  /** Chuyển đổi đối tượng Java (phải implements Serializable) thành byte[]. */
+  /** Chuyển đổi đối tượng Java (phải implements Serializable) thành byte[]. (Không thay đổi) */
   private byte[] serialize(@Nullable Object obj) {
     if (obj == null) {
-      return null;
+
+      return new byte[0];
     }
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos)) {
       oos.writeObject(obj);
       return bos.toByteArray();
     } catch (IOException e) {
+
       throw new CacheSerializationException(
-          "Lỗi khi serialize cache value cho key '" + obj + "'", e);
+          "Lỗi khi serialize cache object. Class: " + obj.getClass().getName(), e);
     }
   }
 
-  /** Chuyển đổi byte[] (từ DB) trở lại đối tượng Java. */
+  /** Chuyển đổi byte[] (từ DB) trở lại đối tượng Java. (Không thay đổi) */
   @Nullable
   private Object deserialize(@Nullable byte[] bytes) {
-    if (bytes == null) {
+    if (bytes == null || bytes.length == 0) {
       return null;
     }
     try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
@@ -150,7 +160,7 @@ public class DatabaseCache implements Cache {
     }
   }
 
-  /** Ngoại lệ tùy chỉnh cho lỗi serialization/deserialization. */
+  /** Ngoại lệ tùy chỉnh. (Không thay đổi) */
   private static class CacheSerializationException extends RuntimeException {
     public CacheSerializationException(String message, Throwable cause) {
       super(message, cause);
